@@ -1,0 +1,34 @@
+name: Test GitHub Actions
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - dev
+  schedule:
+    - cron: "0 */1 * * *" # Every hour
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    environment: ci_cd_pipeline
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CI_GH_PAT }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        id: py312
+        with:
+          python-version: "3.12"
+
+      - run: echo '${{ steps.py312.outputs.python-version }}'
+      - run: echo '${{ steps.py312.outputs.python-path }}'
+
+      - name: Run the script
+        run: python app.py
+        working-directory: src
