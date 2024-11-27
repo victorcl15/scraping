@@ -29,6 +29,9 @@ jobs:
       - run: echo '${{ steps.py312.outputs.python-version }}'
       - run: echo '${{ steps.py312.outputs.python-path }}'
 
+      - name: Install dependencies
+        run: pip install beautifulsoup4 requests pandas
+
       - name: Run the script
         run: python app.py
         working-directory: src
