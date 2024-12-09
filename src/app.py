@@ -14,78 +14,90 @@ import subprocess
 # Install beautifulsoup4
 subprocess.run(["pip", "install", "beautifulsoup4"])
 
+
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
 # URL de la página de búsqueda en Mercado Libre
 url = 'https://listado.mercadolibre.com.co/audifonos#D%5BA:Audifonos%5D'
+base_url = 'https://listado.mercadolibre.com.co/audifonos'
 
 # Realizar la solicitud a la página web
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36'
 }
-response = requests.get(url, headers=headers)
 
-# Verificar que la solicitud fue exitosa
-if response.status_code == 200:
-    soup = BeautifulSoup(response.content, 'html.parser')
+# Variables para almacenar los datos
+nombres = []
+precios = []
+calificaciones = []
+urls = []
 
-    # Variables para almacenar los datos
-    nombres = []
-    precios = []
-    calificaciones = []
-    urls = []
+# Número de páginas que deseas consultar
+num_paginas = 5
 
-    # Buscar los contenedores de cada producto
-    productos = soup.find_all('li', class_='ui-search-layout__item')
+# Iterar por el número de páginas
+for pagina in range(num_paginas):
+    # Construir URL para la página actual
+    offset = pagina * 50 + 1 if pagina > 0 else 0
+    url = f"{base_url}_Desde_{offset}_NoIndex_True" if pagina > 0 else url
 
-    for producto in productos:
-        # Extraer nombre del producto
-        nombre_tag = producto.find('h2', class_='poly-component__title')
-        nombre = nombre_tag.find('a').get_text().strip() if nombre_tag else 'N/A'
+    # Realizar la solicitud a la página web
+    response = requests.get(url, headers=headers)
 
-        # Extraer precio actual del producto
-        precio_tag = producto.find('div', class_='poly-price__current')
-        precio = precio_tag.find('span', class_='andes-money-amount__fraction').get_text().strip() if precio_tag else 'N/A'
+    # Verificar que la solicitud fue exitosa
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Extraer calificación del producto
-        calificacion_tag = producto.find('div', class_='poly-component__reviews')
-        calificacion = calificacion_tag.find('span', class_='poly-reviews__rating').get_text().strip() if calificacion_tag else 'Sin calificación'
+        # Buscar los contenedores de cada producto
+        productos = soup.find_all('li', class_='ui-search-layout__item')
 
-        # Extraer URL del producto
-        enlace_tag = nombre_tag.find('a') if nombre_tag else None
-        url_producto = enlace_tag['href'] if enlace_tag else 'N/A'
+        for producto in productos:
+            # Extraer nombre del producto
+            nombre_tag = producto.find('h2', class_='poly-component__title')
+            nombre = nombre_tag.find('a').get_text().strip() if nombre_tag else 'N/A'
 
-        # Añadir los datos a las listas
-        nombres.append(nombre)
-        precios.append(precio)
-        calificaciones.append(calificacion)
-        urls.append(url_producto)
+            # Extraer precio actual del producto
+            precio_tag = producto.find('div', class_='poly-price__current')
+            precio = precio_tag.find('span', class_='andes-money-amount__fraction').get_text().strip() if precio_tag else 'N/A'
 
-    # Crear el DataFrame con los datos extraídos
-    df = pd.DataFrame({
-        'Nombre del Producto': nombres,
-        'Precio (COP)': precios,
-        'Calificación': calificaciones,
-        'URL del Producto': urls
-    })
+            # Extraer calificación del producto
+            calificacion_tag = producto.find('div', class_='poly-component__reviews')
+            calificacion = calificacion_tag.find('span', class_='poly-reviews__rating').get_text().strip() if calificacion_tag else 'Sin calificación'
 
-    # Guardar los datos en un archivo CSV
-    df.to_csv('productos_mercado_libre.csv', index=False)
-    print(df)
-    print("Datos guardados en 'productos_mercado_libre.csv'")
+            # Extraer URL del producto
+            enlace_tag = nombre_tag.find('a') if nombre_tag else None
+            url_producto = enlace_tag['href'] if enlace_tag else 'N/A'
 
-else:
-    print(f"Error al acceder a la página. Código de estado: {response.status_code}")
+            # Añadir los datos a las listas
+            nombres.append(nombre)
+            precios.append(precio)
+            calificaciones.append(calificacion)
+            urls.append(url_producto)
 
-# Configura pandas para mostrar todas las columnas
+        print(f"Página {pagina + 1} procesada con éxito.")
+    else:
+        print(f"Error al acceder a la página {pagina + 1}. Código de estado: {response.status_code}")
+
+# Crear el DataFrame con los datos extraídos
+df = pd.DataFrame({
+    'Nombre del Producto': nombres,
+    'Precio (COP)': precios,
+    'Calificación': calificaciones,
+    'URL del Producto': urls
+})
+
+# Guardar los datos en un archivo CSV
+df.to_csv('productos_mercado_libre.csv', index=False)
+print(df)
+print("Datos guardados en 'productos_mercado_libre.csv'")
+
+# Configurar pandas para mostrar todas las columnas
 pd.set_option('display.max_columns', None)
 
-#Configura pandas para mostrar el total de todas las filas
+# Configurar pandas para mostrar el total de todas las filas
 pd.set_option('display.max_colwidth', None)
 
-#Visualizar DataFrame
-df
-
+# Visualizar DataFrame
 print("Fin del programa.")
